@@ -1,0 +1,19 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# pytest
+.pytest_cache/
+
+# Virtual environments
+.venv/
+
+# Secrets — never commit these.
+# Root-level so the rule covers backend/ too, whose own .gitignore has no .env rule.
+.env
+.env.*
+!.env.example
+
+# Claude Code machine-local settings.
+# .claude/commands/ stays tracked on purpose — must.md and nocode.md are project files.
+.claude/settings.local.json

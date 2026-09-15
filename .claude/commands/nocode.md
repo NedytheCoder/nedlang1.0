@@ -1,0 +1,1 @@
+Do not implement any code, only answer the question if a question is asked, give an opinion or recommendation to a proposed idea or whatever the user prompts with
