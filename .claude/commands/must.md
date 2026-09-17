@@ -1,4 +1,5 @@
 ---
+name: must
 description: Read the whole blueprint folder before doing anything
 argument-hint: [what you want done]
 ---

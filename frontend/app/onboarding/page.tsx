@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Show, SignInButton, useAuth } from '@clerk/nextjs'
+import Spinner from '../components/Spinner'
 
 // Where the FastAPI backend lives. NEXT_PUBLIC_ because this fetch runs in the
 // browser — the token is a Clerk session token the user already holds, so there
@@ -28,7 +29,7 @@ const COMFORT_OPTIONS = [
   'I freeze up the moment someone speaks to me.',
   'I manage simple things, but I lose it when they reply fast.',
   'I get by, but I hesitate and I sound stiff.',
-  'I am fairly comfortable — I just keep making the same mistakes.',
+  'I am fairly comfortable, I just keep making the same mistakes.',
 ]
 
 const CARD =
@@ -88,7 +89,7 @@ export default function OnboardingPage() {
         <div className={CARD}>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">You&apos;re set.</h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Saved. Your first conversation isn&apos;t built yet — this is where it will start.
+            Saved. Your first conversation isn&apos;t built yet. This is where it will start.
           </p>
         </div>
       </div>
@@ -176,8 +177,9 @@ export default function OnboardingPage() {
           <button
             type="submit"
             disabled={saving || !goal.trim() || !comfort}
-            className="mt-8 h-11 w-full rounded-full bg-purple-700 text-sm font-medium text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-purple-700 text-sm font-medium text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
+            {saving && <Spinner />}
             {saving ? 'Saving…' : 'Start'}
           </button>
         </form>

@@ -1,8 +1,49 @@
 @import "tailwindcss";
 
+/* Dark is two conditions, not one, and Tailwind's `dark:` has to agree with the
+   variables below or the two halves of a page disagree with each other.
+
+   No stored choice means no `data-theme` attribute at all — the state every
+   visitor starts in, and the state anyone with JavaScript off stays in — so the
+   operating system still decides, which is what this project did before the
+   header had a switch. An explicit choice puts the attribute on <html>, and an
+   attribute beats a media query because the person beats the machine. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+
+  &:where(:root[data-theme='dark'], :root[data-theme='dark'] *) {
+    @slot;
+  }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Tells the browser which mode the page is in, so the parts of the UI we do
+     not draw ourselves follow along: the caret and selection colour inside the
+     onboarding textarea, scrollbars, focus rings on native controls, and
+     autofilled input backgrounds. Without it those stay light on a dark page —
+     a white scrollbar beside a dark card, and an autofilled field that turns
+     itself pale yellow.
+
+     A single value, not `light dark`. `light dark` hands the decision back to
+     the operating system, which is the one thing the header's switch exists to
+     override; the dark blocks below set `dark` on the same two conditions the
+     `dark:` variant uses. */
+  color-scheme: light;
+
+  /* Paper and ink, not white and near-black. The surface belongs to the
+     document rather than to a page: the header lives in layout.tsx and draws
+     its background from here, so a landing page that painted its own surface
+     showed a seam across the top of the screen in both schemes. Measured, not
+     guessed — the seam is in the screenshots that preceded this change.
+
+     #1B1633 is a violet-black rather than a grey-black, so it agrees with the
+     purple the buttons already use. */
+  --background: #FAFAFB;
+  --foreground: #1B1633;
 }
 
 @theme inline {
@@ -18,11 +59,22 @@
   --font-mono: var(--font-poppins);
 }
 
+/* The same two conditions as the variant above, in the same order. Repeating the
+   three declarations is the price of CSS having no way to say "either of these
+   selectors, one of which lives inside a media query" — and three lines twice is
+   cheaper to read than the alternatives. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: #141024;
+    --foreground: #EDEBF5;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #141024;
+  --foreground: #EDEBF5;
 }
 
 body {

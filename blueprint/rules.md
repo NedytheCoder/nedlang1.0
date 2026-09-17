@@ -184,3 +184,82 @@ Do not start a later step because an earlier one is boring.
 
 Step 5 is not optional and does not move later. Until it ships, only you and
 people who know it's a prototype may use the product.
+
+---
+
+## Rule 11 — Every page works on a phone, and in both colour schemes
+
+Two things, checked on every page you add or touch. Neither is a polish pass at
+the end; both are cheaper to do while the markup is being written than to
+retrofit.
+
+**Responsive.** It must be usable at 320px wide. Single column by default,
+widening at breakpoints — not a desktop layout that gets scrollbars. Padding and
+type scale up, they do not start large: a flat `px-16` is 64px of gutter on each
+side, which is a quarter of a small phone's screen.
+
+**Light and dark.** Every colour you set needs its counterpart. A `bg-white`
+without a `dark:` is a white slab on a dark page. Utilities that are genuinely
+mode-agnostic — white text on a saturated brand colour, or a token like
+`bg-foreground` that already flips — need nothing, but that has to be true, not
+assumed.
+
+Dark mode has **two** sources, in this order: an explicit choice from the switch
+in the header, and failing that, the operating system's `prefers-color-scheme`.
+The choice lives in one place — `data-theme` on `<html>` — and it is resolved
+once, by the inline script in `layout.tsx`, before the first paint. Nothing else
+recomputes it; the toggle and the stylesheet both read the attribute.
+
+Three things hold that together, and breaking any one of them breaks dark mode in
+a way that is invisible in review:
+
+- `globals.css` redefines Tailwind's `dark:` variant with `@custom-variant`, so
+  it fires on `:root[data-theme='dark']` **and** on `prefers-color-scheme: dark`
+  when no attribute is set. The colour variables below it repeat the same two
+  conditions in the same order. Change one, change both, or half a page goes
+  dark and half stays light.
+- The inline script in `layout.tsx` must stay in `<head>` and stay inline. Moved,
+  deferred, or turned into something that hydrates, it stops running before paint
+  and every load flashes the wrong colour.
+- `color-scheme` follows the attribute, not the OS. It is what extends the theme
+  to the parts of the UI the browser draws — carets, scrollbars, autofill, native
+  focus rings. Do not set it back to `light dark`: that hands the decision to the
+  OS, which is exactly what a person just overrode. Do not remove it either.
+
+With JavaScript off, no attribute is ever written and the media query alone
+decides — which is what this project did before the switch existed.
+
+**Verify it in a real browser. Use Playwright.** Reading the generated CSS proves
+a class was emitted, not that a human can use the page. Seams, overlaps, text
+that wraps into a heading, a spinner invisible against its own button — none of
+those are in the stylesheet. Drive the page.
+
+What that means in practice: run the dev server, open the route, set the viewport
+to 320px and to a desktop width, and render it under both
+`color_scheme="light"` and `color_scheme="dark"`. Screenshot each. **Then look at
+the screenshots** — agents can read image files, so this is a real check, not a
+file you generate and ignore. For anything interactive, drive it: fill the field,
+click the button, watch the request leave. That is the difference between
+"written" and "executed", and Rule 3 turns on it.
+
+**Setup, honestly.** The browsers are already cached at `~/.cache/ms-playwright`,
+but as of 2026-09-17 Playwright does not run here. Two things are missing, and
+the first needs a password you do not have:
+
+```
+sudo apt install -y libnss3 libnspr4     # chrome-headless-shell won't start without these
+```
+
+...plus the driver package itself, which is installed in neither project. Ask for
+these rather than assuming they are there — check first, every time, because the
+answer changes.
+
+**When it genuinely is not available**, fall back: build, then read the generated
+CSS. Each `dark:` class you wrote should appear **twice** — once inside
+`@media (prefers-color-scheme:dark)` qualified by `:root:not([data-theme])`, and
+once under `:root[data-theme='dark']` with no media query at all. Only one of the
+two means the variant has been broken back to a single source. Responsive
+utilities belong inside their `@media (min-width:...)` block. This is the weaker
+check. Say plainly that no browser was used and that the claim is about
+generated CSS rather than pixels — never let the fallback pass for the real
+thing.
