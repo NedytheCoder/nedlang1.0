@@ -8,8 +8,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Both of these point at the same font on purpose. Tailwind resolves
+     --default-font-family from --font-sans and --default-mono-font-family from
+     --font-mono, and its preflight hard-codes the mono one onto <code>, <kbd>,
+     <samp> and <pre>. Leaving --font-mono unset does not remove a font, it just
+     falls through to the system monospace stack — so pointing it at Poppins is
+     what actually makes Poppins the only font on the page. */
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-poppins);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +28,4 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

@@ -48,6 +48,96 @@ blank if something was removed.
 
 # Log
 
+## 2026-09-17 01:03 IST — The onboarding page: two questions, one screen
+
+**Agent:** Claude Opus 5 (Claude Code)
+
+**Prompt:** "Read the blueprint folder thoroghly and In the onboarding page.tsx, build the onboarding page only. Take inspiration from the original nedlang project's onboarding"
+
+**Added:**
+- `frontend/app/onboarding/page.tsx` — 187 lines. A client component asking product.md M2's two questions and posting them to `POST /api/user`. The file already existed, empty, created 2026-09-16 23:55.
+
+**Changed:** none.
+
+**Deleted:** none.
+
+**Commands run:**
+- Read the old project's onboarding in full: `page.tsx` (309 lines), `StepAccount`, `StepLanguage`, `StepMotivation`, `ProgressBar`, `LoadErrorNotice`, `types.ts`, `layout.tsx`, and `docs/foundation/flows/Flow_03_Onboarding_profile.md`
+- `stat` on `blueprint/*.md` → `architecture.md`, `product.md` and `rules.md` unchanged since this session read them
+- `cat frontend/package.json` → no framer-motion, no react-icons; the old wizard's animation and icon dependencies are not installed and were not added
+- Read `node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md` and `02-guides/environment-variables.md` per `frontend/AGENTS.md`
+- `grep '^ALLOWED_ORIGINS' .env` → `http://<host>:3000` is allowed, so the dev-server origin can reach the backend
+- `npx tsc --noEmit` → clean. `npm run lint` → clean.
+- `npm run build` → compiled successfully, TypeScript clean, route `/onboarding` present and dynamic
+- `npm run dev` + `curl http://localhost:3000/onboarding` → HTTP 200; body inspected twice (see below)
+- `grep` of `.next/static/chunks/` → the question text and all four comfort options are present in a client chunk
+
+**Verified:** the route builds, type-checks, lints, and returns 200. The component and its copy are in the client bundle that reaches the browser.
+
+**Not verified — say this plainly:**
+- **No browser was used.** No Chromium, Playwright or Puppeteer is installed here. The hydrated render was never seen, no button was clicked, and `POST /api/user` was never called from this page. The endpoint's own behaviour was measured in the 21:03 entry; the wiring between the two is written, not executed.
+- The server render is empty. Measured: the SSR HTML for `/onboarding` is `<div class="flex flex-1 items-center justify-center px-4 py-10"></div>` and nothing inside it. Cause below.
+
+**Decisions:**
+- **One screen, not a wizard.** The old project ran six steps behind a `ProgressBar` with slide transitions. M2 is two questions justified by "start learning in under 60 seconds"; a stepper for two questions is ceremony, and the progress bar, the step types, the back button and the summary screen all disappear with it. What was taken from the old project is the shape — a centred card on a plain background, rounded-2xl, soft shadow, one primary action — not the machinery.
+- **The comfort question is four tappable sentences; the goal question is free text.** Both still store free text, so `schema.sql` and `POST /api/user` are untouched. The sentences describe the situation ("they reply too fast"), never a level — product.md N2 rules out a placement test, and a self-selected "A2" is not something a scenario can be built from. The goal stays open because it is genuinely open and because C4 later reads it as prose.
+- **No email-reminders checkbox.** The endpoint accepts `email_reminders` and defaults it to false. The reminder itself is S2 and does not exist, so a checkbox here would be an opt-in to nothing. Rule 6 is satisfied by the default, not by a control.
+- **`NEXT_PUBLIC_API_URL` read inline, with `http://localhost:8000` as the fallback.** No `lib/config.ts`: one call site, one line (Rule 1). The old project had a `BACKEND_URL` module because a dozen files imported it.
+- **Client-side validation is the disabled submit button.** Both answers are required by the backend; `maxLength={500}` on the textarea matches its `Field(max_length=500)`. There is no error-message machinery because there is no way to press the button that would produce one.
+- **No redirect after saving.** The success card says so honestly: there is nowhere to go, because M3 does not exist. Wiring a route to a page that has not been built is exactly the kind of thing Rule 2 forbids.
+
+**Corrects an earlier claim made during this task:** I first gated the render on `useAuth().isLoaded` and, on measuring the blank SSR, switched to Clerk's `<Show>` and wrote a comment saying that fixed it. It does not. `<Show>` server-renders in `layout.tsx` because that layout is a server component; inside a `'use client'` page it resolves only after hydration, exactly like `isLoaded`. The second `curl` proved the markup was still empty. The code kept `<Show>` (fewer lines, matches the layout's idiom) and the comment now states the real finding.
+
+**Noticed but not touched:**
+- **`<ClerkProvider dynamic>` is what would fix the empty server render** — `node_modules/@clerk/nextjs/dist/types/types.d.ts:21` — at the cost of opting every route into dynamic rendering. That is a root-layout decision, not this page's, so it was left alone.
+- **`NEXT_PUBLIC_API_URL` is set nowhere.** Today the fallback is correct, so nothing is broken locally; a deploy needs it, alongside the backend's `ALLOWED_ORIGINS`.
+- Nothing links to `/onboarding`. It is reachable only by typing the URL. Sign-up does not send anyone here — that is the Rule 10 step 1 wiring, and it was not part of this task.
+
+**Next:** decide where sign-up lands, so a new account actually reaches this page.
+
+---
+
+## 2026-09-16 23:50 IST — Poppins, and nothing else, in the frontend
+
+**Agent:** Claude Opus 5 (Claude Code)
+
+**Prompt:** "In the frontend, change the font to poppins, remove every other font"
+
+**Added:** none.
+
+**Changed:**
+- `frontend/app/layout.tsx` — `Geist` and `Geist_Mono` replaced by `Poppins` at weights 400 / 500 / 600; `<html>` now carries `poppins.variable` alone.
+- `frontend/app/globals.css` — `--font-sans` and `--font-mono` both point at `var(--font-poppins)`; the hard-coded `font-family: Arial, Helvetica, sans-serif` on `body` deleted.
+- `frontend/app/page.tsx` — dropped the `font-mono` class from the `<code>` element.
+
+**Deleted:** none.
+
+**Commands run:**
+- `grep` for weight classes across `frontend/app` → only `font-medium` (500) and `font-semibold` (600) are used, plus the 400 default
+- Checked `node_modules/next/dist/compiled/@next/font/dist/google/font-data.json` → Poppins present, weights 100-900, **not a variable font**
+- Read `node_modules/next/dist/docs/01-app/01-getting-started/13-fonts.md` → a non-variable font must name its weights
+- Checked `node_modules/tailwindcss/theme.css` and `preflight.css` → `--default-font-family` resolves from `--font-sans`, `--default-mono-font-family` from `--font-mono`, and preflight applies the latter to `code, kbd, samp, pre`
+- `npm run build` → compiled successfully, TypeScript clean, 4 static pages
+- Built CSS inspected: `--default-font-family: var(--font-poppins)` and `--default-mono-font-family: var(--font-poppins)`; the only `@font-face` family is Poppins (plus Next's metric-matched "Poppins Fallback")
+- `grep -rni "geist|arial|helvetica" app/ *.ts` → no matches
+
+**Verified:** the build runs and the shipped CSS resolves every element — `html` and `code`/`kbd`/`samp`/`pre` alike — to Poppins. Three `.woff2` files are preloaded (latin, one per weight); nine exist on disk because Google also returns latin-ext and devanagari faces, which carry `unicode-range` and are fetched only if a character needs them. No English or French page will request them.
+
+**Not verified:** nothing was opened in a browser. The assertion is on the generated stylesheet, not on rendered glyphs.
+
+**Decisions:**
+- **Three weights, not nine.** Poppins is not a variable font, so each weight is its own download. 400 / 500 / 600 are the three the app uses today; adding one later is a one-line change.
+- **`--font-mono` points at Poppins rather than being removed.** Removing it does not remove a font — Tailwind's preflight hard-codes a monospace stack onto `<code>`, `<kbd>`, `<samp>` and `<pre>`, so an unset variable just falls through to the system monospace. Pointing it at Poppins is what actually satisfies "remove every other font". This also means `<code>` no longer looks monospaced, which is a visual change beyond swapping the family — flagging it as the one debatable part of this task.
+- Also removed the `font-mono` class from `page.tsx` for the same reason. That file is still the create-next-app scaffold and will be replaced.
+
+**Noticed but not touched:**
+- **The site was never rendering Geist in body text.** `globals.css` set `font-family: Arial, Helvetica, sans-serif` on `body`, which overrode the `--font-sans` theme value that Geist was wired into. Both Geist fonts were being downloaded and largely not displayed. Deleting that rule is what makes the theme variable take effect at all.
+- `page.tsx` still carries a redundant `font-sans` class, now that Poppins is the default for everything. Harmless, and the file is scaffold.
+
+**Next:** unchanged — the onboarding page that calls `POST /api/user`.
+
+---
+
 ## 2026-09-16 23:31 IST — CORS, so a browser can actually reach /api/user
 
 **Agent:** Claude Opus 5 (Claude Code)

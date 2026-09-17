@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Poppins } from 'next/font/google'
 import './globals.css'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+// The only font in the project. Poppins is not a variable font, so next/font
+// requires the weights to be named up front and downloads one file per weight —
+// these are the three the app actually uses: 400 for body text, 500 for
+// `font-medium`, 600 for `font-semibold`. Adding one later is a one-line change;
+// shipping a weight nothing renders is a download every visitor pays for.
+const poppins = Poppins({
+  variable: '--font-poppins',
+  weight: ['400', '500', '600'],
   subsets: ['latin'],
 })
 
@@ -34,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <html lang="en" className={`${poppins.variable} h-full antialiased`}>
         <body className="min-h-full flex flex-col">
           <header className="flex justify-end items-center p-4 gap-4 h-16">
             <Show when="signed-out">
