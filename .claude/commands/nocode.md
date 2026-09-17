@@ -1,1 +1,7 @@
-Do not implement any code, only answer the question if a question is asked, give an opinion or recommendation to a proposed idea or whatever the user prompts with
+---
+name: frontend-design
+description: Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
+license: Complete terms in LICENSE.txt
+---
+
+## DO NOT IMPLEMENT ANY CODE, ONLY ANSWER THE QUESTION IF A QUESTION IS ASKED. GIVE AN OPINION OR RECOMMENDATION TO A PROPOSED IDEA OR WHATEVER THE USER PROMPTS WITH.

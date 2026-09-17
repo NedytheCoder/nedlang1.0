@@ -543,7 +543,7 @@ def _seed_mistake(conn, user, scenario, *, due_in_days: int = 0, interval: int =
     """Insert a mistake with a controlled review date. Used by §2 and §3."""
     mid = "m_" + uuid.uuid4().hex[:10]
     conn.execute(
-        "INSERT INTO mistakes (id, user_id, session_id, wrong, right, why,"
+        "INSERT INTO mistakes (id, user_id, session_id, wrong, correct, why,"
         " next_review_at, interval_days, mastered)"
         " VALUES (%s, %s, NULL, %s, %s, %s, %s, %s, %s)",
         (mid, user["id"], phrase, "une baguette", "un pain is a loaf",
@@ -858,7 +858,13 @@ class TestDueToday:
 # Generalising that question is the highest-value test in this file.
 # ═══════════════════════════════════════════════════════════════════════════
 
-_SQL_SELECT_COLS = re.compile(r"SELECT\s+(.*?)\s+FROM\s+(\w+)", re.I | re.S)
+# [^;] rather than . so a match cannot run past the end of its own statement.
+# SQL uses the word SELECT for two unrelated things, and this pattern cannot
+# tell them apart: `GRANT SELECT, INSERT ON users` is a permission, not a
+# query. Those statements carry no FROM, so stopping at the semicolon is what
+# excludes them — otherwise the match runs on to the next FROM in the file and
+# reports every word in between, comments included, as a column name.
+_SQL_SELECT_COLS = re.compile(r"SELECT\s+([^;]*?)\s+FROM\s+(\w+)", re.I | re.S)
 _SQL_INSERT_COLS = re.compile(r"INSERT\s+INTO\s+(\w+)\s*\((.*?)\)", re.I | re.S)
 _SQL_UPDATE_COLS = re.compile(r"UPDATE\s+(\w+)\s+SET\s+(.*?)(?:WHERE|RETURNING|$)", re.I | re.S)
 
@@ -1130,9 +1136,9 @@ def _seed_session(conn, user, scenario, *, minutes_ago: int = 0) -> str:
 def _seed_ai_usage(conn, user) -> str:
     rid = "use_" + uuid.uuid4().hex[:10]
     conn.execute(
-        "INSERT INTO ai_usage (id, user_id, model, input_tokens, output_tokens,"
-        " estimated_cost, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-        (rid, user["id"], "claude-haiku-4-5", 400, 120, 0.0011,
+        "INSERT INTO ai_usage (id, user_id, feature, model, tokens_in, tokens_out,"
+        " estimated_cost, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        (rid, user["id"], "feedback", "claude-haiku-4-5", 400, 120, 0.0011,
          dt.datetime.now(dt.timezone.utc)),
     )
     return rid
@@ -1291,7 +1297,10 @@ class TestTheAdminConnectionStaysOutOfRequestPaths:
         as the owner or as a BYPASSRLS role, every policy above is decoration."""
         sql = "".join(p.read_text(errors="ignore") for p in _sources(BACKEND_DIR, ".py", ".sql"))
         for bad in ("BYPASSRLS", "SUPERUSER"):
-            for m in re.finditer(rf"CREATE ROLE\s+(\w+)[^;]*{bad}", sql, re.I):
+            # \b before the keyword so NOBYPASSRLS and NOSUPERUSER — which say
+            # the opposite — are not read as matches. Without it this test fails
+            # on a role created correctly, which teaches you to ignore it.
+            for m in re.finditer(rf"CREATE ROLE\s+(\w+)[^;]*\b{bad}", sql, re.I):
                 role = m.group(1)
                 assert "app" not in role.lower(), f"the application role {role} has {bad}"
 
